@@ -1,0 +1,42 @@
+import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.metrics import precision_score
+import matplotlib.pyplot as plt
+
+df = pd.read_csv('/content/weight-height.csv')
+
+df["Gender"].value_counts()
+
+df["Gender"] = df["Gender"].astype('category')
+
+df["Gender_code"] = df["Gender"].cat.codes
+del df['Gender']
+
+df.Height *=2.5
+df.Weight /=2.5
+
+df_fem = df.iloc[5001:10000, : ]
+df_COOLMANS = df.iloc[1:5000, : ]
+
+des_m = df_COOLMANS.describe()
+des_f = df_fem.describe()
+
+df_COOLMANS.plot.bar()
+df_fem.plot.bar()
+df.plot.bar()
+
+X = df.drop('Gender', axis=1)
+
+kmeans = KMeans(n_clusters=2, random_state=42)
+kmeans.fit(X)
+df['kmeans_cluster'] = kmeans.labels_
+
+agg_clustering = AgglomerativeClustering(n_clusters=2)
+df['agg_cluster'] = agg_clustering.fit_predict(X)
+
+kmeans_score = precision_score(X.kmeans_cluster, df['kmeans_cluster'])
+agg_score = precision_score(X.agg_cluster, df['agg_cluster'])
+
+print(f'Средние: {kmeans_score}')
+print(f'Иерархические: {agg_score}')
