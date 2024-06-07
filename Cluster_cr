@@ -1,0 +1,82 @@
+import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.metrics import precision_score
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+
+df = pd.read_csv('Mall_Customers_Segmentation.csv')
+
+df["Genre"].value_counts()
+
+df["Genre"] = df["Genre"].astype('category')
+
+df["Gender_code"] = df["Genre"].cat.codes
+del df['Genre']
+
+scaler = StandardScaler()
+data_scaled = scaler.fit_transform(df)
+
+sse = []
+for k in range(1, 11):
+  kmeans = KMeans(n_clusters=k, max_iter=1000)
+  kmeans.fit(data_scaled)
+  sse.append(kmeans.inertia_)
+
+plt.plot(range(1, 11), sse)
+plt.title('Метод локтя')
+plt.xlabel('Количество кластеров')
+plt.ylabel('SSE')
+plt.show()
+
+sorted_df = df.sort_values(by='Gender_code', ascending=False)
+
+df_fem = sorted_df.iloc[88:200, : ]
+df_COOLMANS = sorted_df.iloc[0:88, : ]
+     
+df_COOLMANS_pre = df_COOLMANS
+del df_COOLMANS_pre['CustomerID']
+df_COOLMANS_pre.plot.bar()
+
+df_fem_pre = df_fem
+del df_fem_pre['CustomerID']
+df_fem_pre.plot.bar()
+
+df_pre = sorted_df
+del df_pre['CustomerID']
+df_pre.plot.bar()
+
+X = df
+del X['Gender_code']
+del X['CustomerID']
+     
+
+kmeans = KMeans(n_clusters=5, random_state=42)
+kmeans.fit(X)
+
+clusters = kmeans.labels_
+
+df['kmeans_cluster'] = kmeans.labels_
+
+
+
+cluster1 = df[df['kmeans_cluster'] == 0]
+cluster2 = df[df['kmeans_cluster'] == 1]
+cluster3 = df[df['kmeans_cluster'] == 2]
+cluster4 = df[df['kmeans_cluster'] == 3]
+cluster5 = df[df['kmeans_cluster'] == 4]
+
+clus1 = cluster1.describe()
+clus2 = cluster2.describe()
+clus3 = cluster3.describe()
+clus4 = cluster4.describe()
+clus5 = cluster5.describe()
+
+agg_clustering = AgglomerativeClustering(n_clusters=5)
+df['agg_cluster'] = agg_clustering.fit_predict(X)
+     
+kmeans_score = precision_score(X.kmeans_cluster, df['kmeans_cluster'], average = 'macro')
+agg_score = precision_score(X.agg_cluster, df['agg_cluster'], average = 'macro')
+
+print(f'Средние: {kmeans_score}')
+print(f'Иерархические: {agg_score}')
